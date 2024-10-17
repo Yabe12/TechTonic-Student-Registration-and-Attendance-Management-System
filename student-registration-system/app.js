@@ -1,4 +1,4 @@
-const connectDB = require('./db');
+const connectDB = require('./config/db');
 
 // Connect to the database
 connectDB();
