@@ -2,29 +2,25 @@ const Admin = require('../models/admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Admin login
+// Admin login function
 exports.adminLogin = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Check if admin exists
         const admin = await Admin.findOne({ email });
         if (!admin) return res.status(400).json({ message: 'Admin not found' });
 
-        // Check password
         const isMatch = await bcrypt.compare(password, admin.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-        // Generate JWT
         const token = jwt.sign({ adminId: admin._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
         res.json({ token });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-// Admin registration (Only for first-time setup)
+// Admin registration function
 exports.registerAdmin = async (req, res) => {
     const { email, password } = req.body;
 
@@ -41,7 +37,7 @@ exports.registerAdmin = async (req, res) => {
     }
 };
 
-// Middleware to authenticate JWT for protected routes
+// Middleware to authenticate JWT
 exports.authMiddleware = (req, res, next) => {
     const token = req.header('Authorization');
     if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
@@ -53,4 +49,11 @@ exports.authMiddleware = (req, res, next) => {
     } catch (error) {
         res.status(401).json({ message: 'Invalid token' });
     }
+};
+
+// Export the controller functions
+module.exports = {
+    adminLogin,
+    registerAdmin,
+    authMiddleware,
 };

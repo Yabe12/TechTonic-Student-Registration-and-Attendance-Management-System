@@ -9,24 +9,36 @@ exports.registerStudent = async (req, res) => {
     } = req.body;
 
     try {
-        // Check if student already exists
+        // Check if the student already exists
         const existingStudent = await Student.findOne({ idNumber });
-        if (existingStudent) return res.status(400).json({ message: 'Student already registered' });
+        if (existingStudent) {
+            return res.status(400).json({ message: 'Student already registered' });
+        }
 
-        // Create a new student
+        // Create a new student instance
         const student = new Student({
-            fullName, idNumber, sex, age, department, email, phoneNumber,
+            fullName,
+            idNumber,
+            sex,
+            age,
+            department,
+            email,
+            phoneNumber,
             interests,
-            experience: { hasExperience, yearsOfExperience },
-            isApproved: false  // Initially set to false
+            experience: {
+                hasExperience,
+                yearsOfExperience
+            },
+            isApproved: false, // Initially set to false
+            attendance: [] // Initialize attendance array
         });
 
         // Save the student to the database
         await student.save();
-
-        res.status(201).json({ message: 'Student registered successfully', student });
+        return res.status(201).json({ message: 'Student registered successfully', student });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -36,19 +48,23 @@ exports.approveStudent = async (req, res) => {
 
     try {
         const student = await Student.findById(studentId);
-        if (!student) return res.status(404).json({ message: 'Student not found' });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
 
+        // Update approval status
         student.isApproved = true;
         student.approvedDate = new Date();
 
-        // Save changes
+        // Save changes to the student record
         await student.save();
 
-        // Generate and send a QR code as a response (could be used for attendance later)
+        // Generate a QR code for the student (could be used for attendance later)
         const qrCode = await QRCode.toDataURL(student.idNumber);
-        res.json({ message: 'Student approved', student, qrCode });
+        return res.json({ message: 'Student approved', student, qrCode });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -59,17 +75,20 @@ exports.markAttendance = async (req, res) => {
 
     try {
         const student = await Student.findById(studentId);
-        if (!student) return res.status(404).json({ message: 'Student not found' });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
 
+        // Record attendance
         const attendanceRecord = { date: new Date(), status };
         student.attendance.push(attendanceRecord);
 
-        // Save the updated attendance
+        // Save the updated attendance records
         await student.save();
-
-        res.json({ message: 'Attendance marked successfully', attendance: student.attendance });
+        return res.json({ message: 'Attendance marked successfully', attendance: student.attendance });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -77,9 +96,10 @@ exports.markAttendance = async (req, res) => {
 exports.getAllStudents = async (req, res) => {
     try {
         const students = await Student.find();
-        res.json(students);
+        return res.json(students);
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -89,11 +109,14 @@ exports.getStudentById = async (req, res) => {
 
     try {
         const student = await Student.findById(studentId);
-        if (!student) return res.status(404).json({ message: 'Student not found' });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
 
-        res.json(student);
+        return res.json(student);
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -103,8 +126,11 @@ exports.saveToGoogleSheets = async (req, res) => {
 
     try {
         const student = await Student.findById(studentId);
-        if (!student) return res.status(404).json({ message: 'Student not found' });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
 
+        // Set up Google Sheets API authentication
         const auth = new google.auth.GoogleAuth({
             credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS),
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
@@ -112,6 +138,7 @@ exports.saveToGoogleSheets = async (req, res) => {
 
         const sheets = google.sheets({ version: 'v4', auth });
 
+        // Prepare the request to append student data
         const request = {
             spreadsheetId: process.env.GOOGLE_SHEET_ID,
             range: 'Sheet1!A2:E',
@@ -125,14 +152,25 @@ exports.saveToGoogleSheets = async (req, res) => {
                         student.email,
                         student.phoneNumber
                     ]
-                ]
+                ],
             },
         };
 
+        // Append the student data to the Google Sheets
         await sheets.spreadsheets.values.append(request);
-
-        res.json({ message: 'Student saved to Google Sheets' });
+        return res.json({ message: 'Student saved to Google Sheets' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
     }
+};
+
+// Export the functions for use in routes
+module.exports = {
+    registerStudent,
+    approveStudent,
+    markAttendance,
+    getAllStudents,
+    getStudentById,
+    saveToGoogleSheets
 };
