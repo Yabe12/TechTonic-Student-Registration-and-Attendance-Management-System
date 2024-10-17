@@ -1,12 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { adminController } = require('../controllers'); // Importing from index.js
-const authMiddleware = require('../middleware/authMiddleware'); // Adjust the path as necessary
+const { adminLogin, registerAdmin } = require('../controllers/adminController');
+// const authMiddleware = require('../middleware/authMiddleware');
 
 // Admin Routes
-router.post('/login', adminController.adminLogin);
-router.post('/register', adminController.registerAdmin);
-// Example protected route (only accessible for authenticated admins)
-// router.get('/protected', authMiddleware, adminController.someProtectedFunction);
+router.post('/login', adminLogin);
+router.post('/register', registerAdmin);
 
 module.exports = router;

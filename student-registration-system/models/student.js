@@ -40,7 +40,7 @@ const studentSchema = new mongoose.Schema({
     },
     sex: {
         type: String,
-        enum: ['Male', 'Female'],
+        enum: ['Male', 'Female', 'Other'],
         required: true
     },
     age: {
@@ -64,7 +64,7 @@ const studentSchema = new mongoose.Schema({
     },
     interests: {
         type: [String],
-        required: false
+        default: []
     },
     experience: experienceSchema,
     isApproved: {

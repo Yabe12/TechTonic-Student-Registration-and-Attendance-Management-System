@@ -1,5 +1,5 @@
 const studentController = require('./studentController');
-const adminController = require('./authController');
+const adminController = require('./adminController');
 
 module.exports = {
     studentController,

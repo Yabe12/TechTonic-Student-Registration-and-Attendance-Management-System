@@ -1,18 +1,26 @@
 const express = require('express');
-const app = express();
+const mongoose = require('mongoose');
+const cors = require('cors');
 const bodyParser = require('body-parser');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 // Middleware
+app.use(cors());
 app.use(bodyParser.json());
 
-// Import routes
-const routes = require('./routes'); // Adjust the path as necessary
+// Database connection
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch((err) => console.error('MongoDB connection error:', err));
 
-// Use routes
-app.use('/api', routes); // Base path for all API routes
+// Routes
+const routes = require('./routes/index');
+app.use('/api', routes);
 
 // Start the server
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
