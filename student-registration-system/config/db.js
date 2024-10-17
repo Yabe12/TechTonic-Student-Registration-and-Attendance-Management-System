@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
+require('dotenv').config(); // Load environment variables from .env file
 
-// MongoDB connection URI for techtonic database
-const dbURI = 'mongodb://localhost:27017/techtonic'; // replace with your URI if using MongoDB Atlas
+// MongoDB connection URI from environment variable
+const dbURI = process.env.MONGODB_URI; // Replace with your environment variable
 
 const connectDB = async () => {
   try {
