@@ -1,5 +1,5 @@
 const Admin = require('../models/admin');
-
+const jwt = require('jsonwebtoken'); 
 // Admin login
 exports.adminLogin = async (req, res) => {
     const { email, password } = req.body;
@@ -19,14 +19,31 @@ exports.adminLogin = async (req, res) => {
     }
 };
 
-// Register a new admin
 exports.registerAdmin = async (req, res) => {
     const { email, password } = req.body;
 
+    // Check if username and password are both "texn"
+    if (email === 'texn' && password === 'texn') {
+        return res.status(400).json({ message: 'Username and password cannot be "texn".' });
+    }
+
     try {
+        // Check if admin already exists
+        const existingAdmin = await Admin.findOne({ email });
+        if (existingAdmin) {
+            return res.status(400).json({ message: 'Admin already registered with this email.' });
+        }
+
+        // Create a new admin
         const newAdmin = new Admin({ email, password });
         await newAdmin.save();
-        res.status(201).json({ message: 'Admin registered successfully' });
+
+        // Generate token (adjust the payload and secret as needed)
+        const token = jwt.sign({ id: newAdmin._id, email: newAdmin.email }, process.env.JWT_SECRET, {
+            expiresIn: '1h', // Set token expiration
+        });
+
+        res.status(201).json({ message: 'Admin registered successfully', token });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
