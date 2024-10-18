@@ -1,6 +1,6 @@
 const Student = require('../models/student');
-
-
+const nodemailer = require('nodemailer');
+const QRCode = require('qrcode');
 exports.registerStudent = async (req, res) => {
     const studentData = req.body;
 
@@ -24,23 +24,42 @@ exports.registerStudent = async (req, res) => {
 };
 
 
-// Approve a student
 exports.approveStudent = async (req, res) => {
-    const { studentId } = req.params;
+    const { idNumber } = req.body; // Expecting idNumber in the request body
 
     try {
-        const student = await Student.findById(studentId);
-        if (!student) return res.status(404).json({ message: 'Student not found' });
+        const student = await Student.findOne({ idNumber });
 
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Approve the student
         student.isApproved = true;
-        student.approvedDate = Date.now();
+        student.approvedDate = Date.now(); // Set the approval date
         await student.save();
-        res.json({ message: 'Student approved successfully' });
+
+        // Generate a QR code for the student's ID number
+        const qrCodeUrl = await QRCode.toDataURL(student.idNumber);
+
+        // Send an email with the QR code
+        const mailOptions = {
+            from: 'your-email@gmail.com',
+            to: student.email,
+            subject: 'Your Registration Approved',
+            html: `<h1>Your Registration is Approved</h1>
+                   <p>Use this QR code for your student ID:</p>
+                   <img src="${qrCodeUrl}" alt="QR Code" />`
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        res.status(200).json({ message: 'Student approved successfully and notified via email.' });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
-
 // Mark attendance for a student
 exports.markAttendance = async (req, res) => {
     const { studentId } = req.params;
