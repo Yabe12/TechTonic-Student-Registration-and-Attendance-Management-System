@@ -1,6 +1,17 @@
 const Student = require('../models/student');
-const nodemailer = require('nodemailer');
+
 const QRCode = require('qrcode');
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+    host: 'sandbox.smtp.mailtrap.io',
+    port: 2525, // Use the port number provided by Mailtrap
+    auth: {
+        user: process.env.MAILTRAP_USER, // Your Mailtrap SMTP user
+        pass: process.env.MAILTRAP_PASSWORD // Your Mailtrap SMTP password
+    }
+});
+
 exports.registerStudent = async (req, res) => {
     const studentData = req.body;
 
@@ -44,7 +55,7 @@ exports.approveStudent = async (req, res) => {
 
         // Send an email with the QR code
         const mailOptions = {
-            from: 'your-email@gmail.com',
+            from: process.env.EMAIL_FROM, // Use the environment variable
             to: student.email,
             subject: 'Your Registration Approved',
             html: `<h1>Your Registration is Approved</h1>
@@ -60,6 +71,7 @@ exports.approveStudent = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 // Mark attendance for a student
 exports.markAttendance = async (req, res) => {
     const { studentId } = req.params;
