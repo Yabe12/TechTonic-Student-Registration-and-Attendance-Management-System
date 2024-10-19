@@ -8,8 +8,7 @@ router.post('/register', studentController.registerStudent);
 router.post('/approve', studentController.approveStudent);
 router.post('/attendance', studentController.markAttendance);
 
-router.get('/', studentController.getAllStudents);
-router.get('/:studentId', studentController.getStudentById);
-router.post('/save-sheet/:studentId', studentController.saveToGoogleSheets);
+router.post('/api/save-attendance',studentController.saveToGoogleSheets);
+// router.post('/save-sheet/:studentId', studentController.saveToGoogleSheets);
 
 module.exports = router;

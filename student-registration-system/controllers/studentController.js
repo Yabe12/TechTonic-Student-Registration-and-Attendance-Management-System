@@ -3,6 +3,22 @@ const { verifyQRCode } = require('../service/qrCodeService');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
 
+
+const { google } = require('googleapis');
+const sheets = google.sheets('v4');
+require('dotenv').config(); // Ensure you require dotenv to load .env variables
+
+// Use the SPREADSHEET_ID from environment variables
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+
+// Initialize Google Sheets client
+async function getSheetsClient() {
+    const auth = new google.auth.GoogleAuth({
+        keyFile: '../student-registration-system/config/credentials.json', // Path to your service account key file
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    return await auth.getClient();
+}
 const transporter = nodemailer.createTransport({
     host: 'sandbox.smtp.mailtrap.io',
     port: 2525, // Use the port number provided by Mailtrap
@@ -72,19 +88,19 @@ exports.approveStudent = async (req, res) => {
     }
 };
 exports.markAttendance = async (req, res) => {
-    const { idNumber, qrCode } = req.body; // Get both idNumber and QR code from the request body
+    const { idNumber, qrCode } = req.body; 
 
     try {
         let student;
 
-        // Check if idNumber is provided and find the student
+       
         if (idNumber) {
             student = await Student.findOne({ idNumber: idNumber });
         }
 
-        // If student is not found by idNumber, check with the QR code
+       
         if (!student && qrCode) {
-            const decodedIdNumber = await decodeQRCode(qrCode); // Decode QR code to get idNumber
+            const decodedIdNumber = await decodeQRCode(qrCode);
             student = await Student.findOne({ idNumber: decodedIdNumber });
         }
 
@@ -109,30 +125,49 @@ exports.markAttendance = async (req, res) => {
     }
 };
 
-exports.getAllStudents = async (req, res) => {
-    try {
-        const students = await Student.find();
-        res.json(students);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-};
 
-// Get student by ID
-exports.getStudentById = async (req, res) => {
-    const { studentId } = req.params;
-
-    try {
-        const student = await Student.findById(studentId);
-        if (!student) return res.status(404).json({ message: 'Student not found' });
-        res.json(student);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Save student data to Google Sheets
 exports.saveToGoogleSheets = async (req, res) => {
-    // Implement Google Sheets saving logic here
-    res.json({ message: 'Data saved to Google Sheets' });
+    const date = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    const attendanceType = req.body.attendanceType; // Expecting attendance type in request body (e.g., "Present", "Absent", "Permission")
+
+    try {
+        // Fetch all students from the database
+        const students = await Student.find(); // Fetch all student records
+
+        if (students.length === 0) {
+            return res.status(404).json({ message: 'No students found' });
+        }
+
+        // Prepare data for Google Sheets
+        const attendanceData = students.map(student => [
+            student.idNumber,
+            student.email,
+            attendanceType, // Assuming you want to mark all as the same attendance type for this save
+            date,
+            ...student.attendance.map(att => att.date), // Only include the `date` as a string (remove the object structure)
+            // If you want to include the attendance type, use `att.type` instead or add another column for it
+        ]);
+
+        // Prepare the data to be added to the Google Sheet
+        const resource = {
+            values: attendanceData,
+        };
+
+        const authClient = await getSheetsClient();
+        const request = {
+            spreadsheetId: SPREADSHEET_ID,
+            range: 'Sheet1!A1', // Adjust this range as needed
+            valueInputOption: 'RAW',
+            resource,
+            auth: authClient,
+        };
+
+        // Append data to Google Sheets
+        await sheets.spreadsheets.values.append(request);
+
+        res.json({ message: 'Data saved to Google Sheets', attendanceData });
+    } catch (error) {
+        console.error('Error saving data to Google Sheets:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
