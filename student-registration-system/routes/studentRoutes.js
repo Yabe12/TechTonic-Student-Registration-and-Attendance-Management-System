@@ -6,7 +6,7 @@ const studentController = require('../controllers/studentController');
 // Student-related routes
 router.post('/register', studentController.registerStudent);
 router.post('/approve', studentController.approveStudent);
-router.post('/students/attendance', studentController.markAttendance);
+router.post('/attendance', studentController.markAttendance);
 
 router.get('/', studentController.getAllStudents);
 router.get('/:studentId', studentController.getStudentById);
