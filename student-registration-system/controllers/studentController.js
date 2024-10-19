@@ -1,5 +1,5 @@
 const Student = require('../models/student');
-
+const { verifyQRCode } = require('../service/qrCodeService'); 
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
 
@@ -71,25 +71,44 @@ exports.approveStudent = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
-// Mark attendance for a student
 exports.markAttendance = async (req, res) => {
-    const { studentId } = req.params;
-    const { status } = req.body;
+    const { idNumber, qrCode } = req.body; // Get both idNumber and QR code from the request body
 
     try {
-        const student = await Student.findById(studentId);
-        if (!student) return res.status(404).json({ message: 'Student not found' });
+        let student;
 
-        student.attendance.push({ status });
+        // Check if idNumber is provided and find the student
+        if (idNumber) {
+            student = await Student.findOne({ idNumber: idNumber });
+        }
+
+        // If student is not found by idNumber, check with the QR code
+        if (!student && qrCode) {
+            const decodedIdNumber = await decodeQRCode(qrCode); // Decode QR code to get idNumber
+            student = await Student.findOne({ idNumber: decodedIdNumber });
+        }
+
+        if (!student) {
+            console.log('Student not found in the database');
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Create attendance entry
+        const attendanceEntry = {
+            status: 'Present',
+            date: new Date(),
+        };
+
+        student.attendance.push(attendanceEntry);
         await student.save();
-        res.json({ message: 'Attendance marked successfully' });
+
+        res.json({ message: 'Attendance marked successfully', attendance: attendanceEntry });
     } catch (error) {
+        console.error('Error marking attendance:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-// Get all students
 exports.getAllStudents = async (req, res) => {
     try {
         const students = await Student.find();
