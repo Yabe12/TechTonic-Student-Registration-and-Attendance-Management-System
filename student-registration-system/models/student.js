@@ -33,7 +33,7 @@ const studentSchema = new mongoose.Schema({
         trim: true
     },
     idNumber: {
-        type: String,
+        type: String, // Changed from Mixed to String
         required: true,
         unique: true,
         trim: true
