@@ -15,6 +15,7 @@ router.get('/routes', (req, res) => {
         { method: 'POST', path: '/students/attendance', description: 'Mark attendance for a student' },
         { method: 'POST', path: '/students/api/save-attendance', description: 'Save student data to Google Sheets' },
         { method: 'POST', path: '/admins/login', description: 'Admin login' },
+        { method: 'delete', path: '/students/clear-sheet', description: 'Admin login' },
         { method: 'POST', path: '/admins/register', description: 'Register a new admin' },
     ];
     res.json(routesList);

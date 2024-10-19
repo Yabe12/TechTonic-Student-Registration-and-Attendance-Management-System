@@ -7,7 +7,7 @@ const studentController = require('../controllers/studentController');
 router.post('/register', studentController.registerStudent);
 router.post('/approve', studentController.approveStudent);
 router.post('/attendance', studentController.markAttendance);
-
+router.delete('/clear-sheet', studentController.clearGoogleSheet);
 router.post('/api/save-attendance',studentController.saveToGoogleSheets);
 // router.post('/save-sheet/:studentId', studentController.saveToGoogleSheets);
 

@@ -171,3 +171,21 @@ exports.saveToGoogleSheets = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+exports.clearGoogleSheet = async (req, res) => {
+    try {
+        const authClient = await getSheetsClient();
+        const clearRequest = {
+            spreadsheetId: SPREADSHEET_ID,
+            range: 'Sheet1!A2:Z',
+            auth: authClient,
+        };
+
+        await sheets.spreadsheets.values.clear(clearRequest);
+
+        res.json({ message: 'All student data cleared from Google Sheets' });
+    } catch (error) {
+        console.error('Error clearing data from Google Sheets:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
